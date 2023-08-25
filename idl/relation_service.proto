@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package douyin_relation_service;
+option go_package = "relation";
+
+message douyin_relation_action_request { // 关注取关操作
+  int64 from_user_id = 1; // 当前登录用户id
+  int64 to_user_id = 2; // 对方用户id
+  int32 action_type = 3; // 1-关注，2-取消关注
+}
+
+
+message douyin_relation_action_response {
+  int32 status_code = 1; // 状态码，0-成功，其他值-失败
+  string status_msg = 2; // 返回状态描述
+}
+
+message douyin_relation_is_follow_request  {// 关注列表
+  int64 from_user_id = 1; // 当前登录用户id
+  int64 to_user_id = 2; // 对方用户id
+}
+
+message douyin_relation_is_follow_response  {
+  int32 status_code = 1; // 状态码，0-成功，其他值-失败
+  string status_msg = 2; // 返回状态描述
+  bool is_follow = 3; // 是否关注
+}
+
+message douyin_relation_follow_list_request  {// 关注列表
+  int64 user_id = 1; // 要查询的用户id
+}
+
+message douyin_relation_follow_list_response  {
+  int32 status_code = 1; // 状态码，0-成功，其他值-失败
+  string status_msg = 2; // 返回状态描述
+  repeated int64 user_id_list = 3; // 用户ID列表
+}
+
+message douyin_relation_follower_list_request  { // 粉丝列表
+  int64 user_id = 1; // 要查询的用户id
+}
+
+message douyin_relation_follower_list_response  {
+  int32 status_code = 1; // 状态码，0-成功，其他值-失败
+  string status_msg = 2; // 返回状态描述
+  repeated int64 user_id_list = 3; // 用户ID列表
+}
+
+message douyin_relation_friend_list_request  {
+  int64 user_id = 1; // 要查询的用户id
+}
+
+message douyin_relation_friend_list_response  {
+  int32 status_code = 1; // 状态码，0-成功，其他值-失败
+  string status_msg = 2; // 返回状态描述
+  repeated int64 user_id_list = 3; // 用户ID列表
+}
+
+message douyin_user_detail_request  {
+  int64 user_id = 1; // 要查询的用户id
+}
+
+message douyin_user_detail_response  {
+  int32 status_code = 1; // 状态码，0-成功，其他值-失败
+  string status_msg = 2; // 返回状态描述
+  UserDetail detail = 3; // 用户详细信息
+}
+
+message douyin_friend_recent_msg_request  {
+  int64 user_id = 1; // 要查询的用户id
+  int64 friend_id = 2; // 要查询的好友id
+}
+
+message douyin_friend_recent_msg_response  {
+  int32 status_code = 1; // 状态码，0-成功，其他值-失败
+  string status_msg = 2; // 返回状态描述
+  string message = 3; // 和该好友的最新聊天消息
+  int64 msgType = 4; // message消息的类型，0 => 当前请求用户接收的消息， 1 => 当前请求用户发送的消息
+}
+
+message UserDetail {
+  int64 id = 1; // 用户id
+  string name = 2; // 用户名称
+  int64 follow_count = 3; // 关注总数
+  int64 follower_count = 4; // 粉丝总数
+  string avatar = 5; // 用户头像 URL
+  string background_image = 6; // 用户个人页顶部大图
+  string signature = 7; // 个人简介
+  int64 total_favorited = 8; // 获赞数量
+  int64 work_count = 9; // 作品数量
+  int64 favorite_count = 10; // 点赞数量
+}
+
+
+
+service RelationService {
+  rpc RelationAction(douyin_relation_action_request) returns(douyin_relation_action_response);
+  rpc RelationIsFollow(douyin_relation_is_follow_request ) returns(douyin_relation_is_follow_response);
+  rpc RelationFollowList(douyin_relation_follow_list_request ) returns(douyin_relation_follow_list_response);
+  rpc RelationFollowerList(douyin_relation_follower_list_request ) returns(douyin_relation_follower_list_response);
+  rpc RelationFriendList(douyin_relation_friend_list_request ) returns(douyin_relation_friend_list_response);
+  rpc UserDetail(douyin_user_detail_request) returns(douyin_user_detail_response);
+  rpc FriendRecentMsg(douyin_friend_recent_msg_request) returns(douyin_friend_recent_msg_response);
+}

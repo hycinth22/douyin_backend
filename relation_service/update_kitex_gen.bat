@@ -1,0 +1,1 @@
+kitex -service douyin_relation_service -module douyin_relation_service -I ../idl ../idl/relation_service.proto
