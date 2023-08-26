@@ -12,7 +12,7 @@ message douyin_relation_action_request { // 关注取关操作
 
 
 message douyin_relation_action_response {
-  int32 status_code = 1[(api.go_tag)='json:"status_code"']; // 状态码，0-成功，其他值-失败。这里定义go_tag是因为如果不指定则默认json:"status_code,omitempty"，从而在status_code为0时响应缺失字段。下同
+  int32 status_code = 1; // 状态码，0-成功，其他值-失败
   string status_msg = 2; // 返回状态描述
 }
 
@@ -23,9 +23,9 @@ message douyin_relation_follow_list_request  {// 关注列表
 }
 
 message douyin_relation_follow_list_response  {
-  int32 status_code = 1[(api.go_tag)='json:"status_code"']; // 状态码，0-成功，其他值-失败
+  int32 status_code = 1; // 状态码，0-成功，其他值-失败
   string status_msg = 2; // 返回状态描述
-  repeated User user_list = 3[(api.go_tag)='json:"user_list"']; // 用户信息列表
+  repeated User user_list = 3[(api.go_tag)='json:"user_list,omitempty"']; // 用户信息列表
 }
 
 message douyin_relation_follower_list_request  { // 粉丝列表
@@ -34,9 +34,9 @@ message douyin_relation_follower_list_request  { // 粉丝列表
 }
 
 message douyin_relation_follower_list_response  {
-  int32 status_code = 1[(api.go_tag)='json:"status_code"']; // 状态码，0-成功，其他值-失败
+  int32 status_code = 1; // 状态码，0-成功，其他值-失败
   string status_msg = 2; // 返回状态描述
-  repeated User user_list = 3[(api.go_tag)='json:"user_list"'];
+  repeated User user_list = 3[(api.go_tag)='json:"user_list,omitempty"'];
 }
 
 message douyin_relation_friend_list_request  {
@@ -45,29 +45,29 @@ message douyin_relation_friend_list_request  {
 }
 
 message douyin_relation_friend_list_response  {
-  int32 status_code = 1[(api.go_tag)='json:"status_code"']; // 状态码，0-成功，其他值-失败
+  int32 status_code = 1; // 状态码，0-成功，其他值-失败
   string status_msg = 2; // 返回状态描述
-  repeated FriendUser user_list = 3[(api.go_tag)='json:"user_list"'];
+  repeated FriendUser user_list = 3[(api.go_tag)='json:"user_list,omitempty"'];
 }
 
 message User {
   int64 id = 1; // 用户id
   string name = 2; // 用户名称
-  int64 follow_count = 3[(api.go_tag)='json:"follow_count"']; // 关注总数
-  int64 follower_count = 4[(api.go_tag)='json:"follower_count"']; // 粉丝总数
-  bool is_follow = 5[(api.go_tag)='json:"is_follow"']; // 当前登录用户是否已关注该用户
+  int64 follow_count = 3; // 关注总数
+  int64 follower_count = 4; // 粉丝总数
+  bool is_follow = 5; // 当前登录用户是否已关注该用户
   string avatar = 6; // 用户头像 URL
   string background_image = 7; // 用户个人页顶部大图
   string signature = 8; // 个人简介
-  int64 total_favorited = 9[(api.go_tag)='json:"total_favorited"']; // 获赞数量
-  int64 work_count = 10[(api.go_tag)='json:"work_count"']; // 作品数量
-  int64 favorite_count = 11[(api.go_tag)='json:"favorite_count"']; // 点赞数量
+  int64 total_favorited = 9; // 获赞数量
+  int64 work_count = 10; // 作品数量
+  int64 favorite_count = 11; // 点赞数量
 }
 
 message FriendUser {
-  User user = 1;
-  string message = 2[(api.go_tag)='json:"message"']; // 和该好友的最新聊天消息
-  int64 msgType = 3[(api.go_tag)='json:"msgType"']; // message消息的类型，0 => 当前请求用户接收的消息， 1 => 当前请求用户发送的消息
+  User user = 1[(api.go_tag)='json:"user,omitempty"'];
+  string message = 2; // 和该好友的最新聊天消息
+  int64 msgType = 3; // message消息的类型，0 => 当前请求用户接收的消息， 1 => 当前请求用户发送的消息
 }
 
 

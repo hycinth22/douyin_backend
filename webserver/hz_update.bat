@@ -1,1 +1,1 @@
-hz update -module server --idl=../idl/relation_http.proto
+hz update -module server --unset_omitempty --idl ../idl/relation_http.proto
