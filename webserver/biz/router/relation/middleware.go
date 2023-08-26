@@ -3,8 +3,17 @@
 package relation
 
 import (
+	"context"
 	"github.com/cloudwego/hertz/pkg/app"
+	"log"
 )
+
+func logErrors(c context.Context, ctx *app.RequestContext) {
+	ctx.Next(c)
+	if len(ctx.Errors) > 0 {
+		log.Println(ctx.Errors.Errors())
+	}
+}
 
 func rootMw() []app.HandlerFunc {
 	// your code...
@@ -17,8 +26,7 @@ func _douyinMw() []app.HandlerFunc {
 }
 
 func _relationMw() []app.HandlerFunc {
-	// your code...
-	return nil
+	return []app.HandlerFunc{logErrors}
 }
 
 func _actionMw() []app.HandlerFunc {

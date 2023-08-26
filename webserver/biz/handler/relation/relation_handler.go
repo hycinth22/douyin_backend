@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"server/errors"
 
 	auth "server/auth"
 	relation "server/biz/model/relation"
@@ -27,36 +28,39 @@ func init() {
 	var err error
 	relationClient, err = relationService.NewClient(destService, client.WithHostPorts(serviceHostPorts))
 	if err != nil {
-		panic(fmt.Errorf("Create relationRPC client failed: %v", err))
+		panic(fmt.Errorf("create relationRPC client failed: %v", err))
 	}
 
 }
 
-func queryIsFollowUser(ctx context.Context, fromUserId, toUserId int64) (bool, error) {
+func queryIsFollowUser(ctx context.Context, c *app.RequestContext, fromUserId, toUserId int64) (bool, error) {
 	rpcReq := &relationRPC.DouyinRelationIsFollowRequest{
 		FromUserId: fromUserId,
 		ToUserId:   toUserId,
 	}
 	rpcResp, err := relationClient.RelationIsFollow(ctx, rpcReq)
 	if err != nil {
-		log.Printf("RPC error: %v\n", err.Error())
+		err := errors.NewRPCError(err)
+		c.Error(err)
 		return false, err
 	}
 	return rpcResp.IsFollow, nil
 }
 
-func queryUserInfo(ctx context.Context, fromUserId, toUserId int64) (*relation.User, error) {
+func queryUserInfo(ctx context.Context, c *app.RequestContext, fromUserId, toUserId int64) (*relation.User, error) {
 	rpcReq := &relationRPC.DouyinUserDetailRequest{
 		UserId: toUserId,
 	}
 	rpcResp, err := relationClient.UserDetail(ctx, rpcReq)
 	if err != nil {
-		log.Printf("RPC error: %v\n", err.Error())
+		err := errors.NewRPCError(err)
+		c.Error(err)
 		return nil, err
 	}
-	isFollow, err := queryIsFollowUser(ctx, fromUserId, toUserId)
+	isFollow, err := queryIsFollowUser(ctx, c, fromUserId, toUserId)
 	if err != nil {
-		log.Printf("RPC error: %v\n", err.Error())
+		err := errors.NewRPCError(err)
+		c.Error(err)
 		return nil, err
 	}
 	return &relation.User{
@@ -74,14 +78,15 @@ func queryUserInfo(ctx context.Context, fromUserId, toUserId int64) (*relation.U
 	}, nil
 }
 
-func queryRecentMessage(ctx context.Context, currentUID, friendUID int64) (string string, msgType int64, err error) {
+func queryRecentMessage(ctx context.Context, c *app.RequestContext, currentUID, friendUID int64) (string string, msgType int64, err error) {
 	rpcReq := &relationRPC.DouyinFriendRecentMsgRequest{
 		UserId:   currentUID,
 		FriendId: friendUID,
 	}
 	rpcResp, err := relationClient.FriendRecentMsg(ctx, rpcReq)
 	if err != nil {
-		log.Printf("RPC error: %v\n", err.Error())
+		err := errors.NewRPCError(err)
+		c.Error(err)
 		return "", 0, err
 	}
 	return rpcResp.Message, rpcResp.MsgType, nil
@@ -94,12 +99,14 @@ func RelationAction(ctx context.Context, c *app.RequestContext) {
 	var req relation.DouyinRelationActionRequest
 	err = c.BindAndValidate(&req)
 	if err != nil {
+		c.Error(err)
 		c.String(consts.StatusBadRequest, err.Error())
 		return
 	}
 	loginInfo, err := auth.Auth(req.Token)
 	if err != nil {
-		c.String(403, fmt.Sprintf("Auth failed: %v", err.Error()))
+		c.Error(errors.NewAuthError(err))
+		c.String(403, errors.AuthErrorMsg)
 		return
 	}
 	rpcReq := &relationRPC.DouyinRelationActionRequest{
@@ -109,8 +116,9 @@ func RelationAction(ctx context.Context, c *app.RequestContext) {
 	}
 	rpcResp, err := relationClient.RelationAction(ctx, rpcReq)
 	if err != nil {
-		log.Printf("RPC error: %v\n", err.Error())
-		c.String(500, "RPC error")
+		err := errors.NewRPCError(err)
+		c.Error(err)
+		c.String(500, errors.RPCErrorMsg)
 		return
 	}
 	resp := &relation.DouyinRelationActionResponse{
@@ -132,7 +140,8 @@ func RelationFollowList(ctx context.Context, c *app.RequestContext) {
 	}
 	loginInfo, err := auth.Auth(req.Token)
 	if err != nil {
-		c.String(403, fmt.Sprintf("Auth failed: %v", err.Error()))
+		c.Error(errors.NewAuthError(err))
+		c.String(403, errors.AuthErrorMsg)
 		return
 	}
 	rpcReq := &relationRPC.DouyinRelationFollowListRequest{
@@ -140,15 +149,18 @@ func RelationFollowList(ctx context.Context, c *app.RequestContext) {
 	}
 	rpcResp, err := relationClient.RelationFollowList(ctx, rpcReq)
 	if err != nil {
-		log.Printf("RPC error: %v\n", err.Error())
-		c.String(500, "RPC error")
+		err := errors.NewRPCError(err)
+		c.Error(err)
+		c.String(500, errors.RPCErrorMsg)
 		return
 	}
 	userList := make([]*relation.User, len(rpcResp.UserIdList))
 	for i := range rpcResp.UserIdList {
-		userList[i], err = queryUserInfo(ctx, loginInfo.UserId, rpcResp.UserIdList[i])
+		userList[i], err = queryUserInfo(ctx, c, loginInfo.UserId, rpcResp.UserIdList[i])
 		if err != nil {
-			log.Printf("RPC error: %v\n", err.Error())
+			err := errors.NewRPCError(err)
+			c.Error(err)
+			log.Println(err)
 			// dont stop, keep this user's info empty, just return others
 		}
 	}
@@ -172,7 +184,8 @@ func RelationFollowerList(ctx context.Context, c *app.RequestContext) {
 	}
 	loginInfo, err := auth.Auth(req.Token)
 	if err != nil {
-		c.String(403, fmt.Sprintf("Auth failed: %v", err.Error()))
+		c.Error(errors.NewAuthError(err))
+		c.String(403, errors.AuthErrorMsg)
 		return
 	}
 	rpcReq := &relationRPC.DouyinRelationFollowerListRequest{
@@ -180,15 +193,18 @@ func RelationFollowerList(ctx context.Context, c *app.RequestContext) {
 	}
 	rpcResp, err := relationClient.RelationFollowerList(ctx, rpcReq)
 	if err != nil {
-		log.Printf("RPC error: %v\n", err.Error())
-		c.String(500, "RPC error")
+		err := errors.NewRPCError(err)
+		c.Error(err)
+		c.String(500, errors.RPCErrorMsg)
 		return
 	}
 	userList := make([]*relation.User, len(rpcResp.UserIdList))
 	for i := range rpcResp.UserIdList {
-		userList[i], err = queryUserInfo(ctx, loginInfo.UserId, rpcResp.UserIdList[i])
+		userList[i], err = queryUserInfo(ctx, c, loginInfo.UserId, rpcResp.UserIdList[i])
 		if err != nil {
-			log.Printf("RPC error: %v\n", err.Error())
+			err := errors.NewRPCError(err)
+			c.Error(err)
+			log.Println(err)
 			// dont stop, keep this user's info empty, just return others
 		}
 	}
@@ -212,7 +228,8 @@ func RelationFriendList(ctx context.Context, c *app.RequestContext) {
 	}
 	loginInfo, err := auth.Auth(req.Token)
 	if err != nil {
-		c.String(403, fmt.Sprintf("Auth failed: %v", err.Error()))
+		c.Error(errors.NewAuthError(err))
+		c.String(403, errors.AuthErrorMsg)
 		return
 	}
 	if loginInfo.UserId != req.UserId {
@@ -224,19 +241,24 @@ func RelationFriendList(ctx context.Context, c *app.RequestContext) {
 	}
 	rpcResp, err := relationClient.RelationFriendList(ctx, rpcReq)
 	if err != nil {
-		log.Printf("RPC error: %v\n", err.Error())
-		c.String(500, "RPC error")
+		err := errors.NewRPCError(err)
+		c.Error(err)
+		c.String(500, errors.RPCErrorMsg)
 		return
 	}
 	userList := make([]*relation.FriendUser, len(rpcResp.UserIdList))
 	for i := range rpcResp.UserIdList {
-		msg, msgtype, err := queryRecentMessage(ctx, req.UserId, rpcResp.UserIdList[i])
+		msg, msgtype, err := queryRecentMessage(ctx, c, req.UserId, rpcResp.UserIdList[i])
 		if err != nil {
-			log.Printf("RPC error: %v\n", err.Error())
+			err := errors.NewRPCError(err)
+			c.Error(err)
+			log.Println(err)
 		}
-		userInfo, err := queryUserInfo(ctx, loginInfo.UserId, rpcResp.UserIdList[i])
+		userInfo, err := queryUserInfo(ctx, c, loginInfo.UserId, rpcResp.UserIdList[i])
 		if err != nil {
-			log.Printf("RPC error: %v\n", err.Error())
+			err := errors.NewRPCError(err)
+			c.Error(err)
+			log.Println(err)
 			// dont stop, keep this user's info empty, just return others
 		}
 		userList[i] = &relation.FriendUser{
