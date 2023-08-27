@@ -5,13 +5,14 @@ package relation
 import (
 	"context"
 	"github.com/cloudwego/hertz/pkg/app"
-	"log"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 )
 
 func logErrors(c context.Context, ctx *app.RequestContext) {
 	ctx.Next(c)
 	if len(ctx.Errors) > 0 {
-		log.Println(ctx.Errors.Errors())
+		hlog.CtxErrorf(c, "errors collect log: status=%d method=%s full_path=%s client_ip=%s host=%s errors=%v",
+			ctx.Response.StatusCode(), ctx.Request.Header.Method(), ctx.Request.URI().PathOriginal(), ctx.ClientIP(), ctx.Request.Host(), ctx.Errors.Errors())
 	}
 }
 

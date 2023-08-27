@@ -4,8 +4,7 @@ package relation
 
 import (
 	"context"
-	"fmt"
-	"log"
+	"github.com/cloudwego/hertz/pkg/common/hlog"
 	"server/errors"
 
 	auth "server/auth"
@@ -28,9 +27,8 @@ func init() {
 	var err error
 	relationClient, err = relationService.NewClient(destService, client.WithHostPorts(serviceHostPorts))
 	if err != nil {
-		panic(fmt.Errorf("create relationRPC client failed: %v", err))
+		hlog.Fatalf("create relationRPC client failed: %v", err)
 	}
-
 }
 
 func queryIsFollowUser(ctx context.Context, c *app.RequestContext, fromUserId, toUserId int64) (bool, error) {
@@ -41,6 +39,7 @@ func queryIsFollowUser(ctx context.Context, c *app.RequestContext, fromUserId, t
 	rpcResp, err := relationClient.RelationIsFollow(ctx, rpcReq)
 	if err != nil {
 		err := errors.NewRPCError(err)
+		hlog.CtxErrorf(ctx, err.Error())
 		c.Error(err)
 		return false, err
 	}
@@ -54,12 +53,14 @@ func queryUserInfo(ctx context.Context, c *app.RequestContext, fromUserId, toUse
 	rpcResp, err := relationClient.UserDetail(ctx, rpcReq)
 	if err != nil {
 		err := errors.NewRPCError(err)
+		hlog.CtxErrorf(ctx, err.Error())
 		c.Error(err)
 		return nil, err
 	}
 	isFollow, err := queryIsFollowUser(ctx, c, fromUserId, toUserId)
 	if err != nil {
 		err := errors.NewRPCError(err)
+		hlog.CtxErrorf(ctx, err.Error())
 		c.Error(err)
 		return nil, err
 	}
@@ -86,6 +87,7 @@ func queryRecentMessage(ctx context.Context, c *app.RequestContext, currentUID, 
 	rpcResp, err := relationClient.FriendRecentMsg(ctx, rpcReq)
 	if err != nil {
 		err := errors.NewRPCError(err)
+		hlog.CtxErrorf(ctx, err.Error())
 		c.Error(err)
 		return "", 0, err
 	}
@@ -99,13 +101,16 @@ func RelationAction(ctx context.Context, c *app.RequestContext) {
 	var req relation.DouyinRelationActionRequest
 	err = c.BindAndValidate(&req)
 	if err != nil {
+		hlog.CtxErrorf(ctx, err.Error())
 		c.Error(err)
 		c.String(consts.StatusBadRequest, err.Error())
 		return
 	}
 	loginInfo, err := auth.Auth(req.Token)
 	if err != nil {
-		c.Error(errors.NewAuthError(err))
+		err := errors.NewAuthError(err)
+		hlog.CtxErrorf(ctx, err.Error())
+		c.Error(err)
 		c.String(403, errors.AuthErrorMsg)
 		return
 	}
@@ -117,6 +122,7 @@ func RelationAction(ctx context.Context, c *app.RequestContext) {
 	rpcResp, err := relationClient.RelationAction(ctx, rpcReq)
 	if err != nil {
 		err := errors.NewRPCError(err)
+		hlog.CtxErrorf(ctx, err.Error())
 		c.Error(err)
 		c.String(500, errors.RPCErrorMsg)
 		return
@@ -140,7 +146,9 @@ func RelationFollowList(ctx context.Context, c *app.RequestContext) {
 	}
 	loginInfo, err := auth.Auth(req.Token)
 	if err != nil {
-		c.Error(errors.NewAuthError(err))
+		err := errors.NewAuthError(err)
+		hlog.CtxErrorf(ctx, err.Error())
+		c.Error(err)
 		c.String(403, errors.AuthErrorMsg)
 		return
 	}
@@ -150,6 +158,7 @@ func RelationFollowList(ctx context.Context, c *app.RequestContext) {
 	rpcResp, err := relationClient.RelationFollowList(ctx, rpcReq)
 	if err != nil {
 		err := errors.NewRPCError(err)
+		hlog.CtxErrorf(ctx, err.Error())
 		c.Error(err)
 		c.String(500, errors.RPCErrorMsg)
 		return
@@ -159,8 +168,8 @@ func RelationFollowList(ctx context.Context, c *app.RequestContext) {
 		userList[i], err = queryUserInfo(ctx, c, loginInfo.UserId, rpcResp.UserIdList[i])
 		if err != nil {
 			err := errors.NewRPCError(err)
+			hlog.CtxErrorf(ctx, err.Error())
 			c.Error(err)
-			log.Println(err)
 			// dont stop, keep this user's info empty, just return others
 		}
 	}
@@ -184,7 +193,9 @@ func RelationFollowerList(ctx context.Context, c *app.RequestContext) {
 	}
 	loginInfo, err := auth.Auth(req.Token)
 	if err != nil {
-		c.Error(errors.NewAuthError(err))
+		err := errors.NewAuthError(err)
+		hlog.CtxErrorf(ctx, err.Error())
+		c.Error(err)
 		c.String(403, errors.AuthErrorMsg)
 		return
 	}
@@ -194,6 +205,7 @@ func RelationFollowerList(ctx context.Context, c *app.RequestContext) {
 	rpcResp, err := relationClient.RelationFollowerList(ctx, rpcReq)
 	if err != nil {
 		err := errors.NewRPCError(err)
+		hlog.CtxErrorf(ctx, err.Error())
 		c.Error(err)
 		c.String(500, errors.RPCErrorMsg)
 		return
@@ -203,8 +215,8 @@ func RelationFollowerList(ctx context.Context, c *app.RequestContext) {
 		userList[i], err = queryUserInfo(ctx, c, loginInfo.UserId, rpcResp.UserIdList[i])
 		if err != nil {
 			err := errors.NewRPCError(err)
+			hlog.CtxErrorf(ctx, err.Error())
 			c.Error(err)
-			log.Println(err)
 			// dont stop, keep this user's info empty, just return others
 		}
 	}
@@ -228,6 +240,7 @@ func RelationFriendList(ctx context.Context, c *app.RequestContext) {
 	}
 	loginInfo, err := auth.Auth(req.Token)
 	if err != nil {
+		hlog.CtxErrorf(ctx, err.Error())
 		c.Error(errors.NewAuthError(err))
 		c.String(403, errors.AuthErrorMsg)
 		return
@@ -251,14 +264,14 @@ func RelationFriendList(ctx context.Context, c *app.RequestContext) {
 		msg, msgtype, err := queryRecentMessage(ctx, c, req.UserId, rpcResp.UserIdList[i])
 		if err != nil {
 			err := errors.NewRPCError(err)
+			hlog.CtxErrorf(ctx, err.Error())
 			c.Error(err)
-			log.Println(err)
 		}
 		userInfo, err := queryUserInfo(ctx, c, loginInfo.UserId, rpcResp.UserIdList[i])
 		if err != nil {
 			err := errors.NewRPCError(err)
+			hlog.CtxErrorf(ctx, err.Error())
 			c.Error(err)
-			log.Println(err)
 			// dont stop, keep this user's info empty, just return others
 		}
 		userList[i] = &relation.FriendUser{
