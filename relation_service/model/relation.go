@@ -10,8 +10,8 @@ type Relation struct {
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 	DeletedAt  gorm.DeletedAt `gorm:"index"`
-	FromUserID int64
-	ToUserID   int64
+	FromUserID int64          `gorm:"index"`
+	ToUserID   int64          `gorm:"index"`
 	IsFollow   bool
 	PrimaryKey string `gorm:"primaryKey"` //联合主键
 }

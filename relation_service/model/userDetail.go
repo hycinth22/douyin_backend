@@ -7,7 +7,7 @@ import (
 type UserDetail struct {
 	gorm.Model
 
-	UserID        int64 `gorm:"foreignKey:UserID;references:User.ID"`
+	UserID        int64 `gorm:"index;foreignKey:UserID;references:User.ID"`
 	Name          string
 	FollowCount   int64
 	FollowerCount int64
