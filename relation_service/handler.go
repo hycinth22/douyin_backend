@@ -27,58 +27,69 @@ func (s *RelationServiceImpl) RelationAction(ctx context.Context, req *relation.
 			StatusMsg:  "cannot follow yourself",
 		}, nil
 	}
+	{ // make sure user exists
+		ud := query.UserDetail
+		_, err = ud.Where(ud.UserID.Eq(req.ToUserId)).First()
+		if err != nil {
+			return &relation.DouyinRelationActionResponse{
+				StatusCode: 3,
+				StatusMsg:  "cannot follow user that doesn't exist",
+			}, nil
+		}
+	}
 	primaryKey := strconv.FormatInt(req.FromUserId, 10) + "_" + strconv.FormatInt(req.ToUserId, 10)
 	isFollowUpdatedVal := req.ActionType == 1
-	var deltaFollow int64
-	if req.ActionType == 1 {
-		deltaFollow = 1
-	} else {
-		deltaFollow = -1
-	}
-	q := query.Q.Begin()
-	r := q.Relation
-	ud := q.UserDetail
-	defer func() {
-		var xerr error
+	{ // check duplicated operation
+		r := query.Relation
+		result, err := r.Attrs(field.Attrs(&model.Relation{
+			FromUserID: req.FromUserId,
+			ToUserID:   req.ToUserId,
+			IsFollow:   false,
+			PrimaryKey: primaryKey,
+		})).Where(r.PrimaryKey.Eq(primaryKey)).FirstOrCreate()
 		if err != nil {
-			xerr = q.Rollback()
+			return &relation.DouyinRelationActionResponse{
+				StatusCode: 4,
+				StatusMsg:  "fetch current status of relation failed",
+			}, err
+		}
+		if result.IsFollow == isFollowUpdatedVal {
+			// duplicated operation, do nothing
+			return &relation.DouyinRelationActionResponse{
+				StatusCode: 5,
+				StatusMsg:  "duplicated operation",
+			}, err
+		}
+	}
+	// update
+	err = query.Q.Transaction(func(tx *query.Query) error {
+		r := tx.Relation
+		ud := tx.UserDetail
+		_, err = r.Where(r.PrimaryKey.Eq(primaryKey)).Update(r.IsFollow, isFollowUpdatedVal)
+		if err != nil {
+			return err
+		}
+		var deltaFollow int64
+		if req.ActionType == 1 {
+			deltaFollow = 1
 		} else {
-			xerr = q.Commit()
+			deltaFollow = -1
 		}
-		if xerr != nil {
-			println("rollback error")
-			println(xerr)
+		_, err = ud.Where(ud.UserID.Eq(req.FromUserId)).UpdateSimple(ud.FollowCount.Add(deltaFollow))
+		if err != nil {
+			return err
 		}
-	}()
-	result, err := r.Attrs(field.Attrs(&model.Relation{
-		FromUserID: req.FromUserId,
-		ToUserID:   req.ToUserId,
-		IsFollow:   false,
-		PrimaryKey: primaryKey,
-	})).Where(r.PrimaryKey.Eq(primaryKey)).FirstOrCreate()
+		_, err = ud.Where(ud.UserID.Eq(req.ToUserId)).UpdateSimple(ud.FollowerCount.Add(deltaFollow))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return &relation.DouyinRelationActionResponse{
-			StatusCode: 2,
-			StatusMsg:  "update relation error",
+			StatusCode: 6,
+			StatusMsg:  "update relation failed",
 		}, err
-	}
-	if result.IsFollow == isFollowUpdatedVal {
-		return &relation.DouyinRelationActionResponse{
-			StatusCode: 0,
-			StatusMsg:  "duplicated operation",
-		}, nil
-	}
-	_, err = r.Where(r.PrimaryKey.Eq(primaryKey)).Update(r.IsFollow, isFollowUpdatedVal)
-	if err != nil {
-		return nil, err
-	}
-	_, err = ud.Where(ud.UserID.Eq(req.FromUserId)).UpdateSimple(ud.FollowCount.Add(deltaFollow))
-	if err != nil {
-		return nil, err
-	}
-	_, err = ud.Where(ud.UserID.Eq(req.ToUserId)).UpdateSimple(ud.FollowerCount.Add(deltaFollow))
-	if err != nil {
-		return nil, err
 	}
 	return &relation.DouyinRelationActionResponse{
 		StatusCode: 0,
@@ -154,7 +165,6 @@ func (s *RelationServiceImpl) RelationFriendList(ctx context.Context, req *relat
 		StatusMsg:  "success",
 		UserIdList: userIdList,
 	}, nil
-	return
 }
 
 // UserDetail implements the RelationServiceImpl interface.
