@@ -195,7 +195,10 @@ func (s *RelationServiceImpl) UserDetail(ctx context.Context, req *relation.Douy
 // FriendRecentMsg implements the RelationServiceImpl interface.
 func (s *RelationServiceImpl) FriendRecentMsg(ctx context.Context, req *relation.DouyinFriendRecentMsgRequest) (resp *relation.DouyinFriendRecentMsgResponse, err error) {
 	m := query.Message
-	msg, err := m.Where(m.FromUserID.Eq(req.UserId)).Or(m.ToUserID.Eq(req.UserId)).Order(m.CreatedAt.Desc()).First()
+	msg, err := m.Where(m.FromUserID.Eq(req.UserId), m.ToUserID.Eq(req.FriendId)).
+		Or(m.FromUserID.Eq(req.FriendId), m.ToUserID.Eq(req.UserId)).
+		Order(m.CreatedAt.Desc()).
+		First()
 	if err != nil {
 		return nil, err
 	}
