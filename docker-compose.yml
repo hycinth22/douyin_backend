@@ -1,0 +1,82 @@
+version: "3"
+
+services:
+  web:
+    image: golang:1.20.8
+    env_file: docker_env_file
+    command: go run ./web
+    volumes:
+      - .:/src/go/dousheng
+    working_dir: /src/go/dousheng
+    ports:
+      - "8080:8000"
+    depends_on:
+      - user
+      - feed
+      - relation
+    secrets:
+      - MYSQL_HOST
+      - MYSQL_PORT
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_DATABASE
+
+  user:
+    image: golang:1.20.8
+    env_file: docker_env_file
+    command: go run ./service/user
+    volumes:
+      - .:/src/go/dousheng
+    working_dir: /src/go/dousheng
+    expose:
+      - "9001"
+    secrets:
+      - MYSQL_HOST
+      - MYSQL_PORT
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_DATABASE
+
+  feed:
+    image: golang:1.20.8
+    env_file: docker_env_file
+    command: go run ./service/feed
+    volumes:
+      - .:/src/go/dousheng
+    working_dir: /src/go/dousheng
+    expose:
+      - "9002"
+    secrets:
+      - MYSQL_HOST
+      - MYSQL_PORT
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_DATABASE
+
+  relation:
+    image: golang:1.20.8
+    env_file: docker_env_file
+    command: go run ./service/relation
+    volumes:
+      - .:/src/go/dousheng
+    working_dir: /src/go/dousheng
+    expose:
+      - "9003"
+    secrets:
+      - MYSQL_HOST
+      - MYSQL_PORT
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_DATABASE
+
+secrets:
+  MYSQL_HOST:
+    environment: "MYSQL_HOST"
+  MYSQL_PORT:
+    environment: "MYSQL_PORT"
+  MYSQL_USER:
+    environment: "MYSQL_USER"
+  MYSQL_PASSWORD:
+    environment: "MYSQL_PASSWORD"
+  MYSQL_DATABASE:
+    environment: "MYSQL_DATABASE"
