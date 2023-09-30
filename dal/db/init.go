@@ -2,13 +2,14 @@ package db
 
 import (
 	"fmt"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"os"
 	"simple-douyin-backend/dal/db/dao"
 	"simple-douyin-backend/dal/db/gorm_gen"
 	"simple-douyin-backend/pkg/constants"
 	"time"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
@@ -47,6 +48,10 @@ func Init() {
 }
 
 func getDSN() string {
+	dsn, dsnok := os.LookupEnv("DSN")
+	if dsnok {
+		return dsn
+	}
 	host, hostok := os.LookupEnv("MYSQL_HOST")
 	if !hostok {
 		host = constants.MySQLDefaultHost
@@ -67,6 +72,6 @@ func getDSN() string {
 	if !dbnameok {
 		dbname = constants.MySQLDefaultDBName
 	}
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", user, pwd, host, port, dbname)
+	dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", user, pwd, host, port, dbname)
 	return dsn
 }

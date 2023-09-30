@@ -1,1 +1,4 @@
 GOPROXY: https://goproxy.cn,direct
+MYSQL_HOST: 47.115.202.138
+MYSQL_PORT: 3306
+MYSQL_DATABASE: dy

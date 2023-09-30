@@ -10,16 +10,13 @@ services:
     working_dir: /src/go/dousheng
     ports:
       - "8080:8000"
-    depends_on:
+    links:
       - user
       - feed
       - relation
     secrets:
-      - MYSQL_HOST
-      - MYSQL_PORT
       - MYSQL_USER
       - MYSQL_PASSWORD
-      - MYSQL_DATABASE
 
   user:
     image: golang:1.20.8
@@ -31,11 +28,8 @@ services:
     expose:
       - "9001"
     secrets:
-      - MYSQL_HOST
-      - MYSQL_PORT
       - MYSQL_USER
       - MYSQL_PASSWORD
-      - MYSQL_DATABASE
 
   feed:
     image: golang:1.20.8
@@ -47,11 +41,8 @@ services:
     expose:
       - "9002"
     secrets:
-      - MYSQL_HOST
-      - MYSQL_PORT
       - MYSQL_USER
       - MYSQL_PASSWORD
-      - MYSQL_DATABASE
 
   relation:
     image: golang:1.20.8
@@ -63,20 +54,11 @@ services:
     expose:
       - "9003"
     secrets:
-      - MYSQL_HOST
-      - MYSQL_PORT
       - MYSQL_USER
       - MYSQL_PASSWORD
-      - MYSQL_DATABASE
 
 secrets:
-  MYSQL_HOST:
-    environment: "MYSQL_HOST"
-  MYSQL_PORT:
-    environment: "MYSQL_PORT"
   MYSQL_USER:
-    environment: "MYSQL_USER"
+    file: "MYSQL_USER.env"
   MYSQL_PASSWORD:
-    environment: "MYSQL_PASSWORD"
-  MYSQL_DATABASE:
-    environment: "MYSQL_DATABASE"
+    file: "MYSQL_PASSWORD.env"
